@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 
 import { CopilotKit } from "@copilotkit/react-core";
 import "./globals.css";
-import "@copilotkit/react-ui/styles.css";
+//import "@copilotkit/react-ui/styles.css";
+import "@copilotkit/react-core/v2/styles.css";
 
 export const metadata: Metadata = {
   title: "Create Next App",
