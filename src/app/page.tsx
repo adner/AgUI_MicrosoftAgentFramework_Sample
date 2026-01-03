@@ -15,13 +15,14 @@ import { useState } from "react";
 import { AgentState } from "@/lib/types";
 import { AgentInfoCard } from "@/components/agentInfo";
 import { CopilotKit } from "@copilotkit/react-core";
+import { CopilotKitProvider } from "@copilotkit/react-core/v2";
 import { th } from "zod/v4/locales";
 
 export default function CopilotKitPage() {
   return (
-    <CopilotKit runtimeUrl="/api/copilotkit" agent="my_agent">
+    <CopilotKitProvider runtimeUrl="/api/copilotkit">
       <MainContent />
-    </CopilotKit>
+    </CopilotKitProvider>
   );
 }
 

@@ -19,7 +19,7 @@ const colorClasses: Record<string, { border: string; text: string; bg: string }>
 };
 
 export function AgentInfoCard({ themeColor = "blue" }: AgentInfoCardProps) {
-  const { agent } = useAgent({ agentId: "my_agent" });
+  const { agent } = useAgent();
   const colors = colorClasses[themeColor] || colorClasses.blue;
 
   const messageCount = agent.messages?.length ?? 0;
