@@ -14,8 +14,18 @@ import { useAgent, CopilotChat } from "@copilotkit/react-core/v2"
 import { useState } from "react";
 import { AgentState } from "@/lib/types";
 import { AgentInfoCard } from "@/components/agentInfo";
+import { CopilotKit } from "@copilotkit/react-core";
+import { th } from "zod/v4/locales";
 
 export default function CopilotKitPage() {
+  return (
+    <CopilotKit runtimeUrl="/api/copilotkit" agent="my_agent">
+      <MainContent />
+    </CopilotKit>
+  );
+}
+
+function MainContent() {
   const [themeColor, setThemeColor] = useState("#6366f1");
 
   // 🪁 Frontend Actions: https://docs.copilotkit.ai/microsoft-agent-framework/frontend-actions
