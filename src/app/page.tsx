@@ -38,7 +38,7 @@ export default function CopilotKitPage() {
   return (
     <main>
       <AgentInfoCard themeColor={themeColor} />
-      <CopilotChat input={{style: { border: `2px solid ${themeColor}` }}}/>
+      <CopilotChat input={{style: { border: `2px solid ${themeColor}` }}} threadId="my-thread-1"/>
     </main>
   );
 }

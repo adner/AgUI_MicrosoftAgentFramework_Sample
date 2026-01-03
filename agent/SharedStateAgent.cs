@@ -36,6 +36,8 @@ internal sealed class SharedStateAgent : DelegatingAIAgent
             yield break;
         }
 
+        var chatClientAgent = this.InnerAgent as ChatClientAgent;
+        
         var chatOptions = new ChatClientAgentRunOptions
         {
             ChatOptions = chatRunOptions.ChatOptions.Clone(),
