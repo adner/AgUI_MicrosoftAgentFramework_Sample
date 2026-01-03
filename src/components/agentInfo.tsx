@@ -6,6 +6,7 @@ import { AgentState } from "@/lib/types";
 
 interface AgentInfoCardProps {
   themeColor?: string;
+  agentId?: string;
 }
 
 const colorClasses: Record<string, { border: string; text: string; bg: string }> = {
@@ -18,8 +19,9 @@ const colorClasses: Record<string, { border: string; text: string; bg: string }>
   teal: { border: "border-teal-500", text: "text-teal-600", bg: "bg-teal-500" },
 };
 
-export function AgentInfoCard({ themeColor = "blue" }: AgentInfoCardProps) {
-  const { agent } = useAgent();
+export function AgentInfoCard({ themeColor = "blue", agentId = "default" }: AgentInfoCardProps) {
+  
+  const { agent } = useAgent({agentId});
   const colors = colorClasses[themeColor] || colorClasses.blue;
 
   const messageCount = agent.messages?.length ?? 0;

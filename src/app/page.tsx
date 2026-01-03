@@ -21,12 +21,18 @@ import { th } from "zod/v4/locales";
 export default function CopilotKitPage() {
   return (
     <CopilotKitProvider runtimeUrl="/api/copilotkit">
-      <MainContent />
+      <MainContent/>
+      <MainContent agentId="childAgent"/>
     </CopilotKitProvider>
   );
 }
 
-function MainContent() {
+interface MainContentProps {
+  agentId?: string;
+}
+
+
+function MainContent({ agentId = "default" }: MainContentProps) {
   const [themeColor, setThemeColor] = useState("#6366f1");
 
   // 🪁 Frontend Actions: https://docs.copilotkit.ai/microsoft-agent-framework/frontend-actions
@@ -48,8 +54,8 @@ function MainContent() {
 
   return (
     <main>
-      <AgentInfoCard themeColor={themeColor} />
-      <CopilotChat input={{style: { border: `2px solid ${themeColor}` }}} threadId="my-thread-1"/>
+      <AgentInfoCard themeColor={themeColor} agentId={ agentId }/>
+      <CopilotChat input={{style: { border: `2px solid ${themeColor}` }}} threadId={agentId + "_thread"} agentId={ agentId }/>
     </main>
   );
 }
