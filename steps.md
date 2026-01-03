@@ -1,0 +1,4 @@
+# Initial config
+
+`bun install`
+

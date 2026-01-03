@@ -1,0 +1,29 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "agent", "agent", "{A0596E84-2522-6F31-0F43-77167BFA80D0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProverbsAgent", "agent\ProverbsAgent.csproj", "{7CF3E2CC-06FB-18A1-2B4D-9D6920DD8979}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7CF3E2CC-06FB-18A1-2B4D-9D6920DD8979}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7CF3E2CC-06FB-18A1-2B4D-9D6920DD8979}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7CF3E2CC-06FB-18A1-2B4D-9D6920DD8979}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7CF3E2CC-06FB-18A1-2B4D-9D6920DD8979}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7CF3E2CC-06FB-18A1-2B4D-9D6920DD8979} = {A0596E84-2522-6F31-0F43-77167BFA80D0}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7558B77E-6B2A-46A2-B688-43DBEE420EE9}
+	EndGlobalSection
+EndGlobal
