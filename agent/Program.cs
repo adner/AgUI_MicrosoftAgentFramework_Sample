@@ -6,8 +6,27 @@ using Microsoft.Extensions.Options;
 using OpenAI;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
+using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Query;
+using Microsoft.PowerPlatform.Dataverse.Client;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSingleton<IOrganizationService>(provider =>
+{
+    var configuration = provider.GetRequiredService<IConfiguration>();
+    string url = configuration["Url"] ?? throw new InvalidOperationException("Url not found in configuration");
+    string clientId = configuration["ClientId"] ?? throw new InvalidOperationException("ClientId not found in configuration");
+    string clientSecret = configuration["ClientSecret"] ?? throw new InvalidOperationException("ClientSecret not found in configuration");
+
+    string connectionString = $@"
+    AuthType = ClientSecret;
+    Url = {url};
+    ClientId = {clientId};
+    Secret = {clientSecret}";
+
+    return new ServiceClient(connectionString);
+});
 
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Add(ProverbsAgentSerializerContext.Default));
 builder.Services.AddAGUI();
@@ -17,7 +36,8 @@ WebApplication app = builder.Build();
 // Create the agent factory and map the AG-UI agent endpoint
 var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
 var jsonOptions = app.Services.GetRequiredService<IOptions<JsonOptions>>();
-var agentFactory = new ProverbsAgentFactory(builder.Configuration, loggerFactory, jsonOptions.Value.SerializerOptions);
+var orgService = app.Services.GetRequiredService<IOrganizationService>();
+var agentFactory = new ProverbsAgentFactory(builder.Configuration, loggerFactory, jsonOptions.Value.SerializerOptions, orgService);
 app.MapAGUI("/", agentFactory.CreateProverbsAgent());
 
 await app.RunAsync();
@@ -40,13 +60,15 @@ public class ProverbsAgentFactory
     private readonly OpenAIClient _openAiClient;
     private readonly ILogger _logger;
     private readonly System.Text.Json.JsonSerializerOptions _jsonSerializerOptions;
+    private readonly IOrganizationService _orgService;
 
-    public ProverbsAgentFactory(IConfiguration configuration, ILoggerFactory loggerFactory, System.Text.Json.JsonSerializerOptions jsonSerializerOptions)
+    public ProverbsAgentFactory(IConfiguration configuration, ILoggerFactory loggerFactory, System.Text.Json.JsonSerializerOptions jsonSerializerOptions, IOrganizationService orgService)
     {
         _configuration = configuration;
         _state = new();
         _logger = loggerFactory.CreateLogger<ProverbsAgentFactory>();
         _jsonSerializerOptions = jsonSerializerOptions;
+        _orgService = orgService;
 
         var apiKey = configuration["OpenAi_ApiKey"] ?? throw new InvalidOperationException("OpenAi_ApiKey not found in configuration");
 
@@ -59,15 +81,14 @@ public class ProverbsAgentFactory
 
         var chatClientAgent = new ChatClientAgent(
             chatClient,
-            name: "ProverbsAgent",
-            description: @"A helpful assistant that helps manage and discuss proverbs.
-            You have tools available to add, set, or retrieve proverbs from the list.
-            When discussing proverbs, ALWAYS use the get_proverbs tool to see the current list before mentioning, updating, or discussing proverbs with the user.",
+            instructions: @"You are an agent that helps the user retrieve data from Dataverse. Don't use markdown in your responses. Don't cite the FetchXml that was used in your queries, answer using natural language and be brief.",
+            name: "DataverseAgent",
             tools: [
-                AIFunctionFactory.Create(GetProverbs, options: new() { Name = "get_proverbs", SerializerOptions = _jsonSerializerOptions }),
-                AIFunctionFactory.Create(AddProverbs, options: new() { Name = "add_proverbs", SerializerOptions = _jsonSerializerOptions }),
-                AIFunctionFactory.Create(SetProverbs, options: new() { Name = "set_proverbs", SerializerOptions = _jsonSerializerOptions }),
-                AIFunctionFactory.Create(GetWeather, options: new() { Name = "get_weather", SerializerOptions = _jsonSerializerOptions })
+                // AIFunctionFactory.Create(GetProverbs, options: new() { Name = "get_proverbs", SerializerOptions = _jsonSerializerOptions }),
+                // AIFunctionFactory.Create(AddProverbs, options: new() { Name = "add_proverbs", SerializerOptions = _jsonSerializerOptions }),
+                // AIFunctionFactory.Create(SetProverbs, options: new() { Name = "set_proverbs", SerializerOptions = _jsonSerializerOptions }),
+                // AIFunctionFactory.Create(GetWeather, options: new() { Name = "get_weather", SerializerOptions = _jsonSerializerOptions })
+                AIFunctionFactory.Create(ExecuteFetch)
             ]);
 
         return new SharedStateAgent(chatClientAgent, _jsonSerializerOptions);
@@ -76,6 +97,25 @@ public class ProverbsAgentFactory
     // =================
     // Tools
     // =================
+
+    [Description("Executes an FetchXML request using the supplied expression that needs to be a valid FetchXml expression. Returns the result as a JSON string. If the request fails, the response will be prepended with [ERROR] and the error should be presented to the user.")]
+    private string ExecuteFetch(string fetchXmlRequest)
+    {
+        try
+        {
+            FetchExpression fetchExpression = new FetchExpression(fetchXmlRequest);
+            EntityCollection result = _orgService.RetrieveMultiple(fetchExpression);
+
+            return Newtonsoft.Json.JsonConvert.SerializeObject(result);
+        }
+        catch (Exception err)
+        {
+            var errorString = "[ERROR] " + err.ToString();
+            Console.Error.WriteLine(err.ToString());
+
+            return errorString;
+        }
+    }
 
     [Description("Get the current list of proverbs.")]
     private List<string> GetProverbs()

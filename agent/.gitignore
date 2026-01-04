@@ -19,3 +19,5 @@ obj/
 # NuGet
 *.nupkg
 *.snupkg
+
+appsettings.Development.json

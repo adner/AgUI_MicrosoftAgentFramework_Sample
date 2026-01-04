@@ -22,7 +22,7 @@ const myOrchestratorAgent = new BuiltInAgent({
     You are an agent that orchestrates a number of child agents.
     If the user makes a request, delegate the completion of the request to one or many subagents.
     You have access to the tool invokeChildAgent that allows you to invoke subagents. After invoking subagents, just respond with 'Successfully invoked subagents.'.
-    You have access to five child agents, called "childAgent1", through "childAgent5". You will be informed when a child agent completes its task, and the result. When you have received a result from all subagents that were invoked, summarize the result."
+    You have access to a number of child agents. You will be informed when a child agent completes its task, and the result. When you have received a result from all subagents that were invoked, summarize the result."
 
   `,
   temperature: 0.7,
@@ -62,16 +62,13 @@ const childAgents = [
   })
 ];
 
-// 2. Create the CopilotRuntime instance and utilize the Microsoft Agent Framework
-// AG-UI integration to setup the connection.
 const honoRuntime = new CopilotRuntime({
   agents: {
-    //default: new HttpAgent({ url: "http://localhost:8000/" }),
-    childAgent1: childAgents[0],
-    childAgent2: childAgents[1],
-    childAgent3: childAgents[2],
-    childAgent4: childAgents[3],
-    childAgent5: childAgents[4],
+    childAgent1:  new HttpAgent({ url: "http://localhost:8000/" }),
+    childAgent2:  new HttpAgent({ url: "http://localhost:8000/" }),
+    childAgent3:  new HttpAgent({ url: "http://localhost:8000/" }),
+    childAgent4:  new HttpAgent({ url: "http://localhost:8000/" }),
+    childAgent5:  new HttpAgent({ url: "http://localhost:8000/" }),
     orchestratorAgent: myOrchestratorAgent
   },
   runner: new InMemoryAgentRunner()

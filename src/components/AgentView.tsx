@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useAgent } from "@copilotkit/react-core/v2";
+import { useAgent, CopilotChatMessageView } from "@copilotkit/react-core/v2";
 
 interface AgentViewProps {
   name: string;
@@ -58,6 +58,7 @@ export function AgentView({ name, task, taskId }: AgentViewProps) {
           <p className="text-sm text-slate-600">{resultMessage}</p>
         </div>
       )}
+      <CopilotChatMessageView messages={agent.messages} isRunning={agent.isRunning}/>
     </div>
   );
 }
