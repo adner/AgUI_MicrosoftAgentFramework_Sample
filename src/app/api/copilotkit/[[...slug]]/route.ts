@@ -21,10 +21,8 @@ const myOrchestratorAgent = new BuiltInAgent({
   prompt: `
     You are an agent that orchestrates a number of child agents.
     If the user makes a request, delegate the completion of the request to one or many subagents.
-    You have access to the tool invokeChildAgent that allows you to invoke subagents. After invoking subagents, just respond with 'Successfully invoked subagents'.
-    You have access to five child agents, called "childAgent1", through "childAgent5". You will be informed 
-    when a child agent completes its task, and the result. Wait until you have received the results of all child agents that have been invoked, before summarizing. 
-    Never respond to a question from the user yourself, always delegate to subagents."
+    You have access to the tool invokeChildAgent that allows you to invoke subagents. After invoking subagents, just respond with 'Successfully invoked subagents.'.
+    You have access to five child agents, called "childAgent1", through "childAgent5". You will be informed when a child agent completes its task, and the result. Wait until you have received the results of all child agents that have been invoked, before summarizing."
 
   `,
   temperature: 0.7,
@@ -68,7 +66,7 @@ const childAgents = [
 // AG-UI integration to setup the connection.
 const honoRuntime = new CopilotRuntime({
   agents: {
-    default: new HttpAgent({ url: "http://localhost:8000/" }),
+    //default: new HttpAgent({ url: "http://localhost:8000/" }),
     childAgent1: childAgents[0],
     childAgent2: childAgents[1],
     childAgent3: childAgents[2],

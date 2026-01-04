@@ -152,18 +152,21 @@ function SidebarChat({ onSpawn }: SidebarChatProps) {
   useEffect(() => {
     const subscription = childAgent1.subscribe({
       onRunFinishedEvent: (event) => {
-        console.log("childAgent1 RUN_FINISHED:", event);
+        console.log(`${event.agent.agentId} RUN_FINISHED:`, event);
 
         const assistantMessages = event.messages.filter(msg => msg.role === "assistant");      
         console.log("Assistant messages:", assistantMessages);
 
-        agent.addMessage({ id: crypto.randomUUID(),
-        role: "assistant",
-        content: "Result from childAgent1:"})
+        const combinedContent = assistantMessages.map(msg => msg.content).join("\n");
 
-        agent.addMessages(assistantMessages);
+        agent.addMessage({
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: `Result from ${event.agent.agentId}: ` + combinedContent
+        });
+
         agent.runAgent();
-      }
+        }
     });
 
     return () => {
