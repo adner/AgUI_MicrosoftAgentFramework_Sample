@@ -65,10 +65,12 @@ export function AgentView({ name, task }: AgentViewProps) {
           orchestratorAgent.addMessage({
             id: crypto.randomUUID(),
             role: "user",
-            content: "✅ **" + name + " completed: " + lastAssistantMessage.content,
+            content: "✅ " + name + " completed: " + lastAssistantMessage.content,
           });
 
-          await orchestratorAgent.runAgent();
+          const result = await orchestratorAgent.runAgent();
+          console.log(`Result from orchestrator:`, result);
+          
         } finally {
           orchestratorMutex.release();
         }
