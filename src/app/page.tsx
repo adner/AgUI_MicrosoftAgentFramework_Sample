@@ -58,33 +58,33 @@ export default function CopilotKitPage() {
       })),
     }),
     render: ({ args, status }) => (
-      <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-4 shadow-md mb-3">
-        <div className="flex items-center justify-between mb-3">
+      <div className="rounded-xl border-2 border-indigo-300 bg-gradient-to-br from-indigo-100 to-white p-2 shadow-md mb-2">
+        <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
-              <span className="text-indigo-600 text-lg">⚡</span>
+            <div className="w-6 h-6 rounded-full bg-indigo-200 flex items-center justify-center">
+              <span className="text-indigo-700 text-sm">⚡</span>
             </div>
-            <span className="font-semibold text-indigo-900">Invoking Child Agent(s)</span>
+            <span className="font-semibold text-indigo-800 text-sm">Invoking Child Agent(s)</span>
           </div>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
             status === "complete"
-              ? "bg-green-100 text-green-700"
+              ? "bg-emerald-200 text-emerald-800"
               : status === "executing"
-                ? "bg-amber-100 text-amber-700"
-                : "bg-slate-100 text-slate-600"
+                ? "bg-orange-200 text-orange-800 animate-pulse"
+                : "bg-indigo-200 text-indigo-800"
           }`}>
             {status}
           </span>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1">
           {args?.subagents?.map((agent, i) => (
-            <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-white border border-slate-100">
-              <div className="w-6 h-6 rounded-md bg-indigo-500 text-white flex items-center justify-center text-xs font-bold shrink-0">
+            <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-white border border-indigo-200">
+              <div className="w-5 h-5 rounded-md bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
                 {i + 1}
               </div>
               <div className="min-w-0">
                 <div className="font-medium text-slate-800 text-sm">{agent.name}</div>
-                <div className="text-slate-500 text-xs mt-0.5">{agent.task}</div>
+                <div className="text-slate-500 text-xs">{agent.task}</div>
               </div>
             </div>
           ))}
@@ -97,29 +97,29 @@ export default function CopilotKitPage() {
     name: "ExecuteFetch",
     args: z.object({ fetchXmlRequest: z.string() }),
     render: ({ args, status }) => (
-      <div className="rounded-xl border border-purple-100 bg-gradient-to-br from-purple-50 to-white p-4 shadow-md mb-3">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
+      <div className="rounded-xl border-2 border-purple-300 bg-gradient-to-br from-purple-100 to-white px-2 py-1.5 shadow-md mb-2">
+        <div className="flex items-center justify-between h-7 mb-1">
+          <div className="flex items-center gap-1.5">
             <img
               src="https://i0.wp.com/hatfullofdata.blog/wp-content/uploads/2021/04/Dataverse_1600x1600.png?fit=120%2C120&ssl=1"
               alt="Dataverse"
-              className="w-8 h-8 rounded-full"
+              className="w-5 h-5 rounded-full"
             />
-            <span className="font-semibold text-purple-900">Dataverse Query</span>
+            <span className="font-semibold text-purple-800 text-sm leading-none">Dataverse Query</span>
           </div>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
             status === "complete"
-              ? "bg-green-100 text-green-700"
+              ? "bg-emerald-200 text-emerald-800"
               : status === "executing"
-                ? "bg-amber-100 text-amber-700 animate-pulse"
-                : "bg-slate-100 text-slate-600"
+                ? "bg-orange-200 text-orange-800 animate-pulse"
+                : "bg-purple-200 text-purple-800"
           }`}>
             {status === "inProgress" ? "Running query..." : status}
           </span>
         </div>
-        <div className="p-3 rounded-lg bg-white border border-slate-100">
-          <div className="text-xs font-medium text-slate-500 mb-2">FetchXML Request</div>
-          <pre className="text-xs text-slate-700 bg-slate-50 p-3 rounded-md overflow-x-auto whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+        <div className="p-2 rounded-lg bg-white border border-purple-200">
+          <div className="text-xs font-semibold text-purple-600 mb-1">FetchXML Request</div>
+          <pre className="text-xs text-slate-800 bg-slate-100 p-2 rounded-md overflow-x-auto whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
             {args?.fetchXmlRequest || "Running query..."}
           </pre>
         </div>
@@ -220,14 +220,14 @@ function SidebarChat({ onSpawn }: SidebarChatProps) {
           const assistantMessages = event.messages.filter(msg => msg.role === "assistant");
           console.log("Assistant messages:", assistantMessages);
 
-          const combinedContent = assistantMessages.map(msg => msg.content).join("\n");
+          const lastMessage = assistantMessages.at(-1)?.content ?? "";
 
           await orchestratorMutex.acquire();
           try {
             agent.addMessage({
               id: crypto.randomUUID(),
               role: "user",
-              content: `Result from ${event.agent.agentId}: ${combinedContent}`
+              content: `Result from ${event.agent.agentId}: ${lastMessage}`
             });
 
             await agent.runAgent();
