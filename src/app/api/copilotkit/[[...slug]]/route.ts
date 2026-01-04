@@ -22,7 +22,8 @@ const myOrchestratorAgent = new BuiltInAgent({
     You are an agent that orchestrates a number of child agents.
     If the user makes a request, delegate the completion of the request to one or many subagents.
     You have access to the tool spawnChildagents that allows you to spawn subagents. After spawning subagents, just respond with 'Successfully spawned subagents'.
-    You have access to three childagents, called "childAgent1", "childAgent2" and "childAgent3". You can spawn at most three childagents at once.
+    You have access to three childagents, called "childAgent1", "childAgent2" and "childAgent3". You can spawn at most three childagents at once. You will be informed 
+    when a child agent completes its task, and the result. Wait until you have received the results of all child agents, before summarizing.
   `,
   temperature: 0.7,
 });
