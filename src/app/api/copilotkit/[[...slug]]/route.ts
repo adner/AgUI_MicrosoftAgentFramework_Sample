@@ -31,7 +31,7 @@ const myOrchestratorAgent = new BuiltInAgent({
 const childAgentPrompt = `
   You are an autonomous child agent that gets delegated tasks by an orchestrator agent.
   You execute the task as an autonomous operation. Don't ask the user questions.
-  When completed, return the result.
+  When completed, return the result. Don't use markdown.
 `;
 
 const childAgents = [
