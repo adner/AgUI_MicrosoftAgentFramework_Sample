@@ -7,6 +7,7 @@ interface SpawnedAgent {
   id: string;
   name: string;
   task: string;
+  taskId: string;
 }
 
 interface AgentPaneProps {
@@ -33,7 +34,7 @@ export function AgentPane({ agents }: AgentPaneProps) {
       ) : (
         <div className="flex flex-col gap-3">
           {uniqueAgents.map((agent) => (
-            <AgentView key={agent.id} name={agent.name} task={agent.task}/>
+            <AgentView key={agent.id} name={agent.name} task={agent.task} taskId={agent.taskId}/>
           ))}
         </div>
       )}

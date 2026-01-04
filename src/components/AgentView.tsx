@@ -6,18 +6,19 @@ import { useAgent } from "@copilotkit/react-core/v2";
 interface AgentViewProps {
   name: string;
   task: string;
+  taskId: string;
 }
 
-export function AgentView({ name, task }: AgentViewProps) {
+export function AgentView({ name, task, taskId }: AgentViewProps) {
   const { agent } = useAgent({ agentId: name });
 
-  const executedTaskRef = useRef<string | null>(null);
+  const executedTaskIdRef = useRef<string | null>(null);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    // Only run if task is new (different from the last executed task)
-    if (executedTaskRef.current === task) return;
-    executedTaskRef.current = task;
+    // Only run if this is a new invocation (different taskId)
+    if (executedTaskIdRef.current === taskId) return;
+    executedTaskIdRef.current = taskId;
 
     const startAgent = async () => {
       agent.addMessage({
@@ -36,7 +37,7 @@ export function AgentView({ name, task }: AgentViewProps) {
     };
 
     startAgent();
-  }, [agent, task, name]);
+  }, [agent, task, taskId, name]);
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

@@ -6,6 +6,33 @@ import { CopilotKitProvider, defineToolCallRenderer, useConfigureSuggestions, us
 import { z } from "zod";
 import { AgentPane } from "@/components/AgentPane";
 
+// Mutex to prevent concurrent orchestrator updates from multiple child agents
+class Mutex {
+  private locked = false;
+  private queue: (() => void)[] = [];
+
+  async acquire(): Promise<void> {
+    if (!this.locked) {
+      this.locked = true;
+      return;
+    }
+    return new Promise((resolve) => {
+      this.queue.push(resolve);
+    });
+  }
+
+  release(): void {
+    if (this.queue.length > 0) {
+      const next = this.queue.shift()!;
+      next();
+    } else {
+      this.locked = false;
+    }
+  }
+}
+
+const orchestratorMutex = new Mutex();
+
 // Extend Window interface for the global sendChatMessage method
 declare global {
   interface Window {
@@ -17,6 +44,7 @@ interface SpawnedAgent {
   id: string;
   name: string;
   task: string;
+  taskId: string; // Unique ID per invocation
 }
 
 export default function CopilotKitPage() {
@@ -30,13 +58,13 @@ export default function CopilotKitPage() {
       })),
     }),
     render: ({ args, status }) => (
-      <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-4 shadow-md">
+      <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-4 shadow-md mb-3">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
               <span className="text-indigo-600 text-lg">⚡</span>
             </div>
-            <span className="font-semibold text-indigo-900">Invoking Child Agents</span>
+            <span className="font-semibold text-indigo-900">Invoking Child Agent(s)</span>
           </div>
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
             status === "complete"
@@ -150,29 +178,37 @@ function SidebarChat({ onSpawn }: SidebarChatProps) {
   ], [childAgent1, childAgent2, childAgent3, childAgent4, childAgent5]);
 
   useEffect(() => {
-    const subscription = childAgent1.subscribe({
-      onRunFinishedEvent: (event) => {
-        console.log(`${event.agent.agentId} RUN_FINISHED:`, event);
+    const subscriptions = childAgents.map(({ agent: childAgent }) =>
+      childAgent.subscribe({
+        onRunFinishedEvent: async (event) => {
+          console.log(`${event.agent.agentId} RUN_FINISHED:`, event);
 
-        const assistantMessages = event.messages.filter(msg => msg.role === "assistant");      
-        console.log("Assistant messages:", assistantMessages);
+          const assistantMessages = event.messages.filter(msg => msg.role === "assistant");
+          console.log("Assistant messages:", assistantMessages);
 
-        const combinedContent = assistantMessages.map(msg => msg.content).join("\n");
+          const combinedContent = assistantMessages.map(msg => msg.content).join("\n");
 
-        agent.addMessage({
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: `Result from ${event.agent.agentId}: ` + combinedContent
-        });
+          await orchestratorMutex.acquire();
+          try {
+            agent.addMessage({
+              id: crypto.randomUUID(),
+              role: "user",
+              content: `Result from ${event.agent.agentId}: ${combinedContent}`
+            });
 
-        agent.runAgent();
+            await agent.runAgent();
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } finally {
+            orchestratorMutex.release();
+          }
         }
-    });
+      })
+    );
 
     return () => {
-      subscription.unsubscribe();
+      subscriptions.forEach(sub => sub.unsubscribe());
     };
-  }, [childAgent1]);
+  }, [childAgents, agent]);
 
   useFrontendTool({
     name: "invokeChildAgent",
@@ -187,6 +223,7 @@ function SidebarChat({ onSpawn }: SidebarChatProps) {
       const agentsWithIds = subagents.map(agent => ({
         ...agent,
         id: agent.name, // Use agent name as constant ID
+        taskId: crypto.randomUUID(), // Unique ID per invocation
       }));
       onSpawn(prev => [...prev, ...agentsWithIds]);
       return `Invoked child agents: ${subagents.map(a => a.name).join(", ")}`;
