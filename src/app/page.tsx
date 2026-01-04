@@ -1,9 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { CopilotSidebar } from "@copilotkit/react-core/v2"
-import { SimpleForm } from "@/components/SimpleForm";
 import { CopilotKitProvider, defineToolCallRenderer, useConfigureSuggestions, useFrontendTool} from "@copilotkit/react-core/v2";
 import { z } from "zod";
+import { AgentPane } from "@/components/AgentPane";
+
+interface SpawnedAgent {
+  id: string;
+  name: string;
+  task: string;
+}
 
 export default function CopilotKitPage() {
 
@@ -59,17 +66,23 @@ export default function CopilotKitPage() {
 }
 
 function AppLayout() {
+  const [spawnedAgents, setSpawnedAgents] = useState<SpawnedAgent[]>([]);
+
   return (
-   <div>
-    
-      <SidebarChat />
+    <div className="flex h-screen w-full">
+      <AgentPane agents={spawnedAgents} />
+      <SidebarChat onSpawn={setSpawnedAgents} />
     </div>
   );
 }
 
-function SidebarChat() {
+interface SidebarChatProps {
+  onSpawn: React.Dispatch<React.SetStateAction<SpawnedAgent[]>>;
+}
+
+function SidebarChat({ onSpawn }: SidebarChatProps) {
   useConfigureSuggestions({
-    instructions: "Suggest follow-up tasks based on the current page content",
+    instructions: "Suggest tasks for childagents.",
   });
 
   useFrontendTool({
@@ -82,7 +95,11 @@ function SidebarChat() {
       })),
     }),
     handler: async ({ subagents }) => {
-
+      const agentsWithIds = subagents.map(agent => ({
+        ...agent,
+        id: crypto.randomUUID(),
+      }));
+      onSpawn(prev => [...prev, ...agentsWithIds]);
       return `Spawned subagents: ${subagents.map(a => a.name).join(", ")}`;
     },
   });

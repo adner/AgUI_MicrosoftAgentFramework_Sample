@@ -27,14 +27,38 @@ const myOrchestratorAgent = new BuiltInAgent({
   temperature: 0.7,
 });
 
+const childAgentPrompt = `
+  You are an autonomous child agent that gets delegated tasks by an orchestrator agent.
+  You execute the task as an autonomous operation. Don't ask the user questions.
+  When completed, return the result.
+`;
+
+const childAgents = [
+  new BuiltInAgent({
+    model: determineModel(),
+    prompt: childAgentPrompt,
+    temperature: 0.7,
+  }),
+  new BuiltInAgent({
+    model: determineModel(),
+    prompt: childAgentPrompt,
+    temperature: 0.7,
+  }),
+  new BuiltInAgent({
+    model: determineModel(),
+    prompt: childAgentPrompt,
+    temperature: 0.7,
+  }),
+];
+
 // 2. Create the CopilotRuntime instance and utilize the Microsoft Agent Framework
 // AG-UI integration to setup the connection.
 const honoRuntime = new CopilotRuntime({
   agents: {
     default: new HttpAgent({ url: "http://localhost:8000/" }),
-    childAgent1: new HttpAgent({ url: "http://localhost:8000/" }),
-    childAgent2: new HttpAgent({ url: "http://localhost:8000/" }),
-    childAgent3: new HttpAgent({ url: "http://localhost:8000/" }),
+    childAgent1: childAgents[0],
+    childAgent2: childAgents[1],
+    childAgent3: childAgents[2],
     orchestratorAgent: myOrchestratorAgent
   },
   runner: new InMemoryAgentRunner()
