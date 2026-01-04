@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { CopilotSidebar } from "@copilotkit/react-core/v2"
-import { CopilotKitProvider, defineToolCallRenderer, useConfigureSuggestions, useFrontendTool} from "@copilotkit/react-core/v2";
+import { CopilotKitProvider, defineToolCallRenderer, useConfigureSuggestions, useFrontendTool, useAgent } from "@copilotkit/react-core/v2";
 import { z } from "zod";
 import { AgentPane } from "@/components/AgentPane";
 
@@ -21,8 +21,8 @@ interface SpawnedAgent {
 
 export default function CopilotKitPage() {
 
- const spawnRenderer = defineToolCallRenderer({
-    name: "spawnChildagents",
+ const invokeRenderer = defineToolCallRenderer({
+    name: "invokeChildAgent",
     args: z.object({
       subagents: z.array(z.object({
         name: z.string(),
@@ -36,7 +36,7 @@ export default function CopilotKitPage() {
             <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
               <span className="text-indigo-600 text-lg">⚡</span>
             </div>
-            <span className="font-semibold text-indigo-900">Spawning Subagents</span>
+            <span className="font-semibold text-indigo-900">Invoking Child Agents</span>
           </div>
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
             status === "complete"
@@ -66,7 +66,7 @@ export default function CopilotKitPage() {
   });
 
   return (
-    <CopilotKitProvider runtimeUrl="/api/copilotkit" renderToolCalls={[spawnRenderer]} showDevConsole="auto">
+    <CopilotKitProvider runtimeUrl="/api/copilotkit" renderToolCalls={[invokeRenderer]} showDevConsole="auto">
       <AppLayout />
     </CopilotKitProvider>
   );
@@ -106,18 +106,19 @@ function SidebarChat({ onSpawn }: SidebarChatProps) {
       nativeInputValueSetter?.call(textarea, message);
       textarea.dispatchEvent(new Event('input', { bubbles: true }));
 
-      // Find and click the submit button with retry logic
-      const clickSubmit = (retries = 5) => {
+      // Find and click the submit button with retry logic and increasing delay
+      const clickSubmit = (attempt = 1, maxAttempts = 10) => {
+        const delay = attempt * 100; // 100ms, 200ms, 300ms, etc.
         setTimeout(() => {
           const submitButton = document.querySelector('button:has(svg.lucide-arrow-up)') as HTMLButtonElement | null;
           if (submitButton) {
             submitButton.click();
-          } else if (retries > 0) {
-            clickSubmit(retries - 1);
+          } else if (attempt < maxAttempts) {
+            clickSubmit(attempt + 1, maxAttempts);
           } else {
             console.error("sendChatMessage: Could not find submit button after retries");
           }
-        }, 100);
+        }, delay);
       };
       clickSubmit();
     };
@@ -131,9 +132,24 @@ function SidebarChat({ onSpawn }: SidebarChatProps) {
     instructions: "Suggest tasks for childagents.",
   });
 
+  // Track all five child agents
+  const { agent: childAgent1 } = useAgent({ agentId: "childAgent1" });
+  const { agent: childAgent2 } = useAgent({ agentId: "childAgent2" });
+  const { agent: childAgent3 } = useAgent({ agentId: "childAgent3" });
+  const { agent: childAgent4 } = useAgent({ agentId: "childAgent4" });
+  const { agent: childAgent5 } = useAgent({ agentId: "childAgent5" });
+
+  const childAgents = useMemo(() => [
+    { id: "childAgent1", agent: childAgent1 },
+    { id: "childAgent2", agent: childAgent2 },
+    { id: "childAgent3", agent: childAgent3 },
+    { id: "childAgent4", agent: childAgent4 },
+    { id: "childAgent5", agent: childAgent5 },
+  ], [childAgent1, childAgent2, childAgent3, childAgent4, childAgent5]);
+
   useFrontendTool({
-    name: "spawnChildagents",
-    description: "Spawn a number of subagents that perform different tasks.",
+    name: "invokeChildAgent",
+    description: "Invoke child agents to perform tasks. Each agent specified will be triggered with its assigned task. Use getRunningAgents first to check which agents are available.",
     parameters: z.object({
       subagents: z.array(z.object({
         name: z.string(),
@@ -143,10 +159,35 @@ function SidebarChat({ onSpawn }: SidebarChatProps) {
     handler: async ({ subagents }) => {
       const agentsWithIds = subagents.map(agent => ({
         ...agent,
-        id: crypto.randomUUID(),
+        id: agent.name, // Use agent name as constant ID
       }));
       onSpawn(prev => [...prev, ...agentsWithIds]);
-      return `Spawned subagents: ${subagents.map(a => a.name).join(", ")}`;
+      return `Invoked child agents: ${subagents.map(a => a.name).join(", ")}`;
+    },
+  });
+
+  useFrontendTool({
+    name: "getRunningAgents",
+    description: "Get the current status of all five child agents (childAgent1 through childAgent5). Returns whether each agent is currently running or available. Use this to check agent availability before invoking tasks, or to monitor ongoing task progress. An agent must be available (not running) to accept a new task.",
+    parameters: z.object({}),
+    handler: async () => {
+      const statuses = childAgents.map(({ id, agent }) => ({
+        agentId: id,
+        isRunning: agent.isRunning,
+        available: !agent.isRunning,
+      }));
+
+      const runningCount = statuses.filter(s => s.isRunning).length;
+      const availableCount = statuses.filter(s => s.available).length;
+
+      return JSON.stringify({
+        agents: statuses,
+        summary: {
+          totalAgents: 5,
+          running: runningCount,
+          available: availableCount,
+        }
+      });
     },
   });
 
