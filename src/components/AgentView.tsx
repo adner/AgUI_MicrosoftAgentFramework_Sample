@@ -37,7 +37,6 @@ interface AgentViewProps {
 
 export function AgentView({ name, task }: AgentViewProps) {
   const { agent } = useAgent({ agentId: name });
-  const { agent: orchestratorAgent } = useAgent({ agentId: "orchestratorAgent" });
  
   const hasStarted = useRef(false);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
@@ -62,15 +61,7 @@ export function AgentView({ name, task }: AgentViewProps) {
 
         await orchestratorMutex.acquire();
         try {
-          orchestratorAgent.addMessage({
-            id: crypto.randomUUID(),
-            role: "user",
-            content: "✅ " + name + " completed: " + lastAssistantMessage.content,
-          });
-
-          const result = await orchestratorAgent.runAgent();
-          console.log(`Result from orchestrator:`, result);
-          
+          window.sendChatMessage("✅ " + name + " completed: " + lastAssistantMessage.content);
         } finally {
           orchestratorMutex.release();
         }

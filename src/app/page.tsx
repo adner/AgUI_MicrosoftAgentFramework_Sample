@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CopilotSidebar } from "@copilotkit/react-core/v2"
 import { CopilotKitProvider, defineToolCallRenderer, useConfigureSuggestions, useFrontendTool} from "@copilotkit/react-core/v2";
 import { z } from "zod";
 import { AgentPane } from "@/components/AgentPane";
+
+// Extend Window interface for the global sendChatMessage method
+declare global {
+  interface Window {
+    sendChatMessage: (message: string) => void;
+  }
+}
 
 interface SpawnedAgent {
   id: string;
@@ -81,6 +88,45 @@ interface SidebarChatProps {
 }
 
 function SidebarChat({ onSpawn }: SidebarChatProps) {
+  // HACK: Dirty workaround to programmatically send messages to CopilotSidebar.
+  // CopilotKit v2 does not currently expose a hook or API to add messages when using
+  // CopilotKitProvider + CopilotSidebar. This uses DOM manipulation to set the textarea
+  // value and click the submit button directly.
+  useEffect(() => {
+    window.sendChatMessage = (message: string) => {
+      // Find the textarea in the CopilotSidebar
+      const textarea = document.querySelector('textarea[placeholder*="message"], textarea[placeholder*="Message"], textarea') as HTMLTextAreaElement | null;
+      if (!textarea) {
+        console.error("sendChatMessage: Could not find textarea");
+        return;
+      }
+
+      // Set the value and trigger input event so React picks up the change
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+      nativeInputValueSetter?.call(textarea, message);
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+      // Find and click the submit button with retry logic
+      const clickSubmit = (retries = 5) => {
+        setTimeout(() => {
+          const submitButton = document.querySelector('button:has(svg.lucide-arrow-up)') as HTMLButtonElement | null;
+          if (submitButton) {
+            submitButton.click();
+          } else if (retries > 0) {
+            clickSubmit(retries - 1);
+          } else {
+            console.error("sendChatMessage: Could not find submit button after retries");
+          }
+        }, 100);
+      };
+      clickSubmit();
+    };
+
+    return () => {
+      delete (window as Partial<Window>).sendChatMessage;
+    };
+  }, []);
+
   useConfigureSuggestions({
     instructions: "Suggest tasks for childagents.",
   });
