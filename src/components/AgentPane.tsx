@@ -14,16 +14,13 @@ interface AgentPaneProps {
 }
 
 export function AgentPane({ agents }: AgentPaneProps) {
-  // Only show each agent once (first invocation), ignore subsequent invocations
+  // Show each agent once, but use the latest task for each agent
   const uniqueAgents = useMemo(() => {
-    const seen = new Set<string>();
-    return agents.filter((agent) => {
-      if (seen.has(agent.name)) {
-        return false;
-      }
-      seen.add(agent.name);
-      return true;
-    });
+    const agentMap = new Map<string, SpawnedAgent>();
+    for (const agent of agents) {
+      agentMap.set(agent.name, agent); // Later entries override earlier ones
+    }
+    return Array.from(agentMap.values());
   }, [agents]);
 
   return (

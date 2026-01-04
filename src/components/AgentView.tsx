@@ -3,33 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAgent } from "@copilotkit/react-core/v2";
 
-// Mutex to prevent concurrent orchestrator updates from multiple child agents
-class Mutex {
-  private locked = false;
-  private queue: (() => void)[] = [];
-
-  async acquire(): Promise<void> {
-    if (!this.locked) {
-      this.locked = true;
-      return;
-    }
-    return new Promise((resolve) => {
-      this.queue.push(resolve);
-    });
-  }
-
-  release(): void {
-    if (this.queue.length > 0) {
-      const next = this.queue.shift()!;
-      next();
-    } else {
-      this.locked = false;
-    }
-  }
-}
-
-const orchestratorMutex = new Mutex();
-
 interface AgentViewProps {
   name: string;
   task: string;
@@ -37,13 +10,14 @@ interface AgentViewProps {
 
 export function AgentView({ name, task }: AgentViewProps) {
   const { agent } = useAgent({ agentId: name });
- 
-  const hasStarted = useRef(false);
+
+  const executedTaskRef = useRef<string | null>(null);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (hasStarted.current) return;
-    hasStarted.current = true;
+    // Only run if task is new (different from the last executed task)
+    if (executedTaskRef.current === task) return;
+    executedTaskRef.current = task;
 
     const startAgent = async () => {
       agent.addMessage({
@@ -58,18 +32,11 @@ export function AgentView({ name, task }: AgentViewProps) {
         .pop();
       if (lastAssistantMessage?.content) {
         setResultMessage(lastAssistantMessage.content);
-
-        await orchestratorMutex.acquire();
-        try {
-          window.sendChatMessage("✅ " + name + " completed: " + lastAssistantMessage.content);
-        } finally {
-          orchestratorMutex.release();
-        }
       }
     };
 
     startAgent();
-  }, [agent, task]);
+  }, [agent, task, name]);
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

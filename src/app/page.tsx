@@ -132,6 +132,8 @@ function SidebarChat({ onSpawn }: SidebarChatProps) {
     instructions: "Suggest tasks for childagents.",
   });
 
+  const { agent } = useAgent({ agentId: "orchestratorAgent" });
+
   // Track all five child agents
   const { agent: childAgent1 } = useAgent({ agentId: "childAgent1" });
   const { agent: childAgent2 } = useAgent({ agentId: "childAgent2" });
@@ -146,6 +148,28 @@ function SidebarChat({ onSpawn }: SidebarChatProps) {
     { id: "childAgent4", agent: childAgent4 },
     { id: "childAgent5", agent: childAgent5 },
   ], [childAgent1, childAgent2, childAgent3, childAgent4, childAgent5]);
+
+  useEffect(() => {
+    const subscription = childAgent1.subscribe({
+      onRunFinishedEvent: (event) => {
+        console.log("childAgent1 RUN_FINISHED:", event);
+
+        const assistantMessages = event.messages.filter(msg => msg.role === "assistant");      
+        console.log("Assistant messages:", assistantMessages);
+
+        agent.addMessage({ id: crypto.randomUUID(),
+        role: "assistant",
+        content: "Result from childAgent1:"})
+
+        agent.addMessages(assistantMessages);
+        agent.runAgent();
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [childAgent1]);
 
   useFrontendTool({
     name: "invokeChildAgent",
