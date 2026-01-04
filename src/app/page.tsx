@@ -1,110 +1,89 @@
 "use client";
 
-import { ProverbsCard } from "@/components/proverbs";
-import { WeatherCard } from "@/components/weather";
-import { MoonCard } from "@/components/moon";
-import {
-  useCoAgent,
-  useFrontendTool,
-  useHumanInTheLoop,
-  useRenderToolCall,
-} from "@copilotkit/react-core";
-import { CopilotKitCSSProperties, CopilotSidebar } from "@copilotkit/react-ui";
-import { useAgent, CopilotChat } from "@copilotkit/react-core/v2"
-import { useState } from "react";
-import { AgentState } from "@/lib/types";
-import { AgentInfoCard } from "@/components/agentInfo";
-import { CopilotKit } from "@copilotkit/react-core";
-import { CopilotKitProvider } from "@copilotkit/react-core/v2";
-import { th } from "zod/v4/locales";
+import { useAgent, CopilotChat, CopilotSidebar } from "@copilotkit/react-core/v2"
+import { CopilotKitProvider, defineToolCallRenderer, useConfigureSuggestions, useFrontendTool} from "@copilotkit/react-core/v2";
+import { z } from "zod";
 
 export default function CopilotKitPage() {
+
+ const spawnRenderer = defineToolCallRenderer({
+    name: "spawnChildagents",
+    args: z.object({
+      subagents: z.array(z.object({
+        name: z.string(),
+        task: z.string(),
+      })),
+    }),
+    render: ({ args, status }) => (
+      <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-4 shadow-md">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+              <span className="text-indigo-600 text-lg">⚡</span>
+            </div>
+            <span className="font-semibold text-indigo-900">Spawning Subagents</span>
+          </div>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            status === "complete"
+              ? "bg-green-100 text-green-700"
+              : status === "executing"
+                ? "bg-amber-100 text-amber-700"
+                : "bg-slate-100 text-slate-600"
+          }`}>
+            {status}
+          </span>
+        </div>
+        <div className="space-y-2">
+          {args?.subagents?.map((agent, i) => (
+            <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-white border border-slate-100">
+              <div className="w-6 h-6 rounded-md bg-indigo-500 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                {i + 1}
+              </div>
+              <div className="min-w-0">
+                <div className="font-medium text-slate-800 text-sm">{agent.name}</div>
+                <div className="text-slate-500 text-xs mt-0.5">{agent.task}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  });
+
   return (
-    <CopilotKitProvider runtimeUrl="/api/copilotkit">
-      <MainContent/>
-      <MainContent agentId="pirateAgent"/>
+    <CopilotKitProvider runtimeUrl="/api/copilotkit" renderToolCalls={[spawnRenderer]} showDevConsole="auto">
+      <AppLayout />
     </CopilotKitProvider>
   );
 }
 
-interface MainContentProps {
-  agentId?: string;
-}
-
-
-function MainContent({ agentId = "default" }: MainContentProps) {
-  const [themeColor, setThemeColor] = useState("#6366f1");
-
-  // 🪁 Frontend Actions: https://docs.copilotkit.ai/microsoft-agent-framework/frontend-actions
-  useFrontendTool({
-    name: "setThemeColor",
-    description: "Set the theme color of the application",
-    parameters: [
-      {
-        name: "themeColor",
-        type: "string",
-        description: "The theme color to set. Make sure to pick nice colors.",
-        required: true,
-      },
-    ],
-    handler: async ({ themeColor }) => {
-      setThemeColor(themeColor);
-    },
-  });
-
+function AppLayout() {
   return (
-    <main>
-      <AgentInfoCard themeColor={themeColor} agentId={ agentId }/>
-      <CopilotChat input={{style: { border: `2px solid ${themeColor}` }}} threadId={agentId + "_thread"} agentId={ agentId }/>
-    </main>
-  );
-}
-
-function YourMainContent({ themeColor }: { themeColor: string }) {
-  // 🪁 Shared State: https://docs.copilotkit.ai/pydantic-ai/shared-state
-  const { state, setState } = useCoAgent<AgentState>({
-    name: "my_agent",
-    initialState: {
-      proverbs: [
-        
-      ],
-    },
-  });
-
-  //🪁 Generative UI: https://docs.copilotkit.ai/pydantic-ai/generative-ui
-  useRenderToolCall(
-    {
-      name: "get_weather",
-      description: "Get the weather for a given location.",
-      parameters: [{ name: "location", type: "string", required: true }],
-      render: ({ args }) => {
-        return <WeatherCard location={args.location} themeColor={themeColor} />;
-      },
-    },
-    [themeColor],
-  );
-
-  // 🪁 Human In the Loop: https://docs.copilotkit.ai/microsoft-agent-framework/human-in-the-loop/frontend-tool-based
-  useHumanInTheLoop(
-    {
-      name: "go_to_moon",
-      description: "Go to the moon on request.",
-      render: ({ respond, status }) => {
-        return (
-          <MoonCard themeColor={themeColor} status={status} respond={respond} />
-        );
-      },
-    },
-    [themeColor],
-  );
-
-  return (
-    <div
-      style={{ backgroundColor: themeColor }}
-      className="h-screen flex justify-center items-center flex-col transition-colors duration-300"
-    >
-      <ProverbsCard state={state} setState={setState} />
-      <AgentInfoCard themeColor={themeColor} />
+   <div>
+      <SidebarChat />
     </div>
   );
+}
+
+function SidebarChat() {
+  useConfigureSuggestions({
+    instructions: "Suggest follow-up tasks based on the current page content",
+  });
+
+  useFrontendTool({
+    name: "spawnChildagents",
+    description: "Spawn a number of subagents that perform different tasks.",
+    parameters: z.object({
+      subagents: z.array(z.object({
+        name: z.string(),
+        task: z.string(),
+      })),
+    }),
+    handler: async ({ subagents }) => {
+
+      return `Spawned subagents: ${subagents.map(a => a.name).join(", ")}`;
+    },
+  });
+
+  return <CopilotSidebar defaultOpen={true} width="50%" agentId="pirateAgent"/>;
 }

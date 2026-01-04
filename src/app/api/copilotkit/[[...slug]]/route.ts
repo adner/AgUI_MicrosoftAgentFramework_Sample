@@ -18,7 +18,7 @@ const determineModel = () => {
 
 const myPirateAgent = new BuiltInAgent({
   model: determineModel(),
-  prompt: "You are a helpful AI assistant that answers in the style of a pirate.",
+  prompt: "You are an agent that orchestrates a number of child agents. If the user makes a request, delegate the completion of the request to one or many subagents. You have access to the tool spawnChildagents that allows you to spawn subagents.",
   temperature: 0.7,
 });
 
