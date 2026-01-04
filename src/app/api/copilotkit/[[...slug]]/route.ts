@@ -19,8 +19,8 @@ const determineModel = () => {
 const myOrchestratorAgent = new BuiltInAgent({
   model: determineModel(),
   prompt: `
-    You are an agent that orchestrates a number of child agents.
-    If the user makes a request, delegate the completion of the request to one or many subagents.
+    You are an agent that orchestrates a number of child agents. The child agents are specialized in working with data from Dataverse, but can be used for other things as well.
+    If the user makes a request, delegate the completion of the request to one or many child agents.
     You have access to the tool invokeChildAgent that allows you to invoke subagents. After invoking subagents, just respond with 'Successfully invoked subagents.'.
     You have access to a number of child agents. You will be informed when a child agent completes its task, and the result. When you have received a result from all subagents that were invoked, summarize the result."
 

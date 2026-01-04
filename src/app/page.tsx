@@ -96,35 +96,115 @@ export default function CopilotKitPage() {
   const partyRenderer = defineToolCallRenderer({
     name: "ExecuteFetch",
     args: z.object({ fetchXmlRequest: z.string() }),
-    render: ({ args, status }) => (
-      <div className="rounded-xl border-2 border-purple-300 bg-gradient-to-br from-purple-100 to-white px-2 py-1.5 shadow-md mb-2">
-        <div className="flex items-center justify-between h-7 mb-1">
-          <div className="flex items-center gap-1.5">
-            <img
-              src="https://i0.wp.com/hatfullofdata.blog/wp-content/uploads/2021/04/Dataverse_1600x1600.png?fit=120%2C120&ssl=1"
-              alt="Dataverse"
-              className="w-5 h-5 rounded-full"
-            />
-            <span className="font-semibold text-purple-800 text-sm leading-none">Dataverse Query</span>
+    render: ({ args, status, result }) => {
+      // Parse result when complete
+      let entities: Array<{
+        Attributes: Array<{ Key: string; Value: unknown }>;
+        FormattedValues?: Array<{ Key: string; Value: string }>;
+      }> = [];
+      let columns: string[] = [];
+
+      // Helper to extract displayable value from an attribute
+      const getDisplayValue = (entity: typeof entities[0], key: string): string => {
+        // First check FormattedValues (preferred for display)
+        const formatted = entity.FormattedValues?.find(f => f.Key === key);
+        if (formatted) return formatted.Value;
+
+        // Then check Attributes
+        const attr = entity.Attributes?.find(a => a.Key === key);
+        if (!attr) return "";
+
+        // Value might be a simple value or an object with nested Value (aggregates)
+        if (typeof attr.Value === "object" && attr.Value !== null && "Value" in attr.Value) {
+          return String((attr.Value as { Value: unknown }).Value);
+        }
+        return String(attr.Value ?? "");
+      };
+
+      if (status === "complete" && result) {
+        try {
+          // Result may be double-encoded JSON, try parsing twice
+          let parsed = JSON.parse(result);
+          if (typeof parsed === "string") {
+            parsed = JSON.parse(parsed);
+          }
+          entities = parsed.Entities || [];
+          // Get unique column names from all entities
+          const columnSet = new Set<string>();
+          entities.forEach(entity => {
+            entity.Attributes?.forEach(attr => {
+              if (attr.Key !== "contactid" && !attr.Key.endsWith("id")) {
+                columnSet.add(attr.Key);
+              }
+            });
+          });
+          columns = Array.from(columnSet);
+        } catch {
+          // Failed to parse, will show raw result
+        }
+      }
+
+      return (
+        <div className="rounded-xl border-2 border-purple-300 bg-gradient-to-br from-purple-100 to-white px-2 py-1.5 shadow-md mb-2">
+          <div className="flex items-center justify-between h-7 mb-1">
+            <div className="flex items-center gap-1.5">
+              <img
+                src="https://i0.wp.com/hatfullofdata.blog/wp-content/uploads/2021/04/Dataverse_1600x1600.png?fit=120%2C120&ssl=1"
+                alt="Dataverse"
+                className="w-5 h-5 rounded-full"
+              />
+              <span className="font-semibold text-purple-800 text-sm leading-none">Dataverse Query</span>
+            </div>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+              status === "complete"
+                ? "bg-emerald-200 text-emerald-800"
+                : status === "executing"
+                  ? "bg-orange-200 text-orange-800 animate-pulse"
+                  : "bg-purple-200 text-purple-800"
+            }`}>
+              {status === "inProgress" ? "Running query..." : status}
+            </span>
           </div>
-          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-            status === "complete"
-              ? "bg-emerald-200 text-emerald-800"
-              : status === "executing"
-                ? "bg-orange-200 text-orange-800 animate-pulse"
-                : "bg-purple-200 text-purple-800"
-          }`}>
-            {status === "inProgress" ? "Running query..." : status}
-          </span>
+          <div className="p-2 rounded-lg bg-white border border-purple-200">
+            <div className="text-xs font-semibold text-purple-600 mb-1">FetchXML Request</div>
+            <pre className="text-xs text-slate-800 bg-slate-100 p-2 rounded-md overflow-x-auto whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+              {args?.fetchXmlRequest || "Running query..."}
+            </pre>
+          </div>
+          {status === "complete" && entities.length > 0 && (
+            <div className="mt-2 p-2 rounded-lg bg-white border border-purple-200">
+              <div className="text-xs font-semibold text-purple-600 mb-1">
+                Results ({entities.length} record{entities.length !== 1 ? "s" : ""})
+              </div>
+              <div className="overflow-x-auto max-h-64 overflow-y-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-purple-50">
+                      {columns.map(col => (
+                        <th key={col} className="text-left px-2 py-1 border-b border-purple-200 font-semibold text-purple-700 capitalize">
+                          {col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {entities.map((entity, i) => (
+                      <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-purple-50/50"}>
+                        {columns.map(col => (
+                          <td key={col} className="px-2 py-1 border-b border-purple-100 text-slate-700">
+                            {getDisplayValue(entity, col)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
-        <div className="p-2 rounded-lg bg-white border border-purple-200">
-          <div className="text-xs font-semibold text-purple-600 mb-1">FetchXML Request</div>
-          <pre className="text-xs text-slate-800 bg-slate-100 p-2 rounded-md overflow-x-auto whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
-            {args?.fetchXmlRequest || "Running query..."}
-          </pre>
-        </div>
-      </div>
-    ),
+      );
+    },
   });
 
   return (

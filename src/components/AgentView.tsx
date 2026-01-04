@@ -13,7 +13,12 @@ export function AgentView({ name, task, taskId }: AgentViewProps) {
   const { agent } = useAgent({ agentId: name });
 
   const executedTaskIdRef = useRef<string | null>(null);
-  const [showMessages, setShowMessages] = useState(false);
+  const [showMessages, setShowMessages] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     // Only run if this is a new invocation (different taskId)
@@ -34,7 +39,7 @@ export function AgentView({ name, task, taskId }: AgentViewProps) {
   }, [agent, task, taskId, name]);
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+    <div className={`rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-opacity duration-300 ${mounted ? "opacity-100" : "opacity-0"}`}>
       <div className="flex items-center justify-between">
         <span className="font-bold text-slate-800">{name}</span>
         <div className="flex items-center gap-2">
