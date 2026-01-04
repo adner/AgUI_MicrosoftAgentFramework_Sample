@@ -42,7 +42,7 @@ export function AgentView({ name, task, taskId }: AgentViewProps) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between">
-        <span className="font-medium text-slate-800">{name}</span>
+        <span className="font-bold text-slate-800">{name}</span>
         <span
           className={`px-2 py-1 rounded-full text-xs font-semibold ${
             agent.isRunning

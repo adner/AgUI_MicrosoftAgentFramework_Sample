@@ -93,8 +93,42 @@ export default function CopilotKitPage() {
     ),
   });
 
+  const partyRenderer = defineToolCallRenderer({
+    name: "ExecuteFetch",
+    args: z.object({ fetchXmlRequest: z.string() }),
+    render: ({ args, status }) => (
+      <div className="rounded-xl border border-purple-100 bg-gradient-to-br from-purple-50 to-white p-4 shadow-md mb-3">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <img
+              src="https://i0.wp.com/hatfullofdata.blog/wp-content/uploads/2021/04/Dataverse_1600x1600.png?fit=120%2C120&ssl=1"
+              alt="Dataverse"
+              className="w-8 h-8 rounded-full"
+            />
+            <span className="font-semibold text-purple-900">Dataverse Query</span>
+          </div>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            status === "complete"
+              ? "bg-green-100 text-green-700"
+              : status === "executing"
+                ? "bg-amber-100 text-amber-700 animate-pulse"
+                : "bg-slate-100 text-slate-600"
+          }`}>
+            {status === "inProgress" ? "Running query..." : status}
+          </span>
+        </div>
+        <div className="p-3 rounded-lg bg-white border border-slate-100">
+          <div className="text-xs font-medium text-slate-500 mb-2">FetchXML Request</div>
+          <pre className="text-xs text-slate-700 bg-slate-50 p-3 rounded-md overflow-x-auto whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+            {args?.fetchXmlRequest || "Running query..."}
+          </pre>
+        </div>
+      </div>
+    ),
+  });
+
   return (
-    <CopilotKitProvider runtimeUrl="/api/copilotkit" renderToolCalls={[invokeRenderer]} showDevConsole="auto">
+    <CopilotKitProvider runtimeUrl="/api/copilotkit" renderToolCalls={[invokeRenderer, partyRenderer]} showDevConsole="auto">
       <AppLayout />
     </CopilotKitProvider>
   );
