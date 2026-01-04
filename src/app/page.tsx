@@ -61,7 +61,7 @@ export default function CopilotKitPage() {
 function AppLayout() {
   return (
    <div>
-      <SimpleForm />
+    
       <SidebarChat />
     </div>
   );
