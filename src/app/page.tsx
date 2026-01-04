@@ -22,7 +22,7 @@ export default function CopilotKitPage() {
   return (
     <CopilotKitProvider runtimeUrl="/api/copilotkit">
       <MainContent/>
-      <MainContent agentId="childAgent"/>
+      <MainContent agentId="pirateAgent"/>
     </CopilotKitProvider>
   );
 }
