@@ -16,9 +16,14 @@ const determineModel = () => {
   return "openai/gpt-4o";
 };
 
-const myPirateAgent = new BuiltInAgent({
+const myOrchestratorAgent = new BuiltInAgent({
   model: determineModel(),
-  prompt: "You are an agent that orchestrates a number of child agents. If the user makes a request, delegate the completion of the request to one or many subagents. You have access to the tool spawnChildagents that allows you to spawn subagents.",
+  prompt: `
+    You are an agent that orchestrates a number of child agents.
+    If the user makes a request, delegate the completion of the request to one or many subagents.
+    You have access to the tool spawnChildagents that allows you to spawn subagents. After spawning subagents, just respond with 'Successfully spawned subagents'.
+    You have access to three childagents, called "childAgent1", "childAgent2" and "childAgent3". You can spawn at most three childagents at once.
+  `,
   temperature: 0.7,
 });
 
@@ -27,8 +32,10 @@ const myPirateAgent = new BuiltInAgent({
 const honoRuntime = new CopilotRuntime({
   agents: {
     default: new HttpAgent({ url: "http://localhost:8000/" }),
-    childAgent: new HttpAgent({ url: "http://localhost:8000/" }),
-    pirateAgent: myPirateAgent
+    childAgent1: new HttpAgent({ url: "http://localhost:8000/" }),
+    childAgent2: new HttpAgent({ url: "http://localhost:8000/" }),
+    childAgent3: new HttpAgent({ url: "http://localhost:8000/" }),
+    orchestratorAgent: myOrchestratorAgent
   },
   runner: new InMemoryAgentRunner()
 });
