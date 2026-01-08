@@ -16,19 +16,60 @@ const determineModel = () => {
   return "openai/gpt-4o";
 };
 
-const myPirateAgent = new BuiltInAgent({
+const myOrchestratorAgent = new BuiltInAgent({
   model: determineModel(),
-  prompt: "You are a helpful AI assistant that answers in the style of a pirate.",
+  prompt: `
+    You are an agent that orchestrates a number of child agents. The child agents are specialized in working with data from Dataverse, but can be used for other things as well.
+    If the user makes a request, delegate the completion of the request to one or many child agents.
+    You have access to the tool invokeChildAgent that allows you to invoke subagents. After invoking subagents, just respond with 'Successfully invoked subagents.'.
+    You have access to a number of child agents. You will be informed when a child agent completes its task, and the result. When you have received a result from all subagents that were invoked, summarize the result."
+
+  `,
   temperature: 0.7,
 });
 
-// 2. Create the CopilotRuntime instance and utilize the Microsoft Agent Framework
-// AG-UI integration to setup the connection.
+const childAgentPrompt = `
+  You are an autonomous child agent that gets delegated tasks by an orchestrator agent.
+  You execute the task as an autonomous operation. Don't ask the user questions.
+  When completed, return the result. Don't use markdown.
+`;
+
+const childAgents = [
+  new BuiltInAgent({
+    model: determineModel(),
+    prompt: childAgentPrompt,
+    temperature: 0.7,
+  }),
+  new BuiltInAgent({
+    model: determineModel(),
+    prompt: childAgentPrompt,
+    temperature: 0.7,
+  }),
+  new BuiltInAgent({
+    model: determineModel(),
+    prompt: childAgentPrompt,
+    temperature: 0.7,
+  }),
+  new BuiltInAgent({
+    model: determineModel(),
+    prompt: childAgentPrompt,
+    temperature: 0.7,
+  }),
+  new BuiltInAgent({
+    model: determineModel(),
+    prompt: childAgentPrompt,
+    temperature: 0.7,
+  })
+];
+
 const honoRuntime = new CopilotRuntime({
   agents: {
-    default: new HttpAgent({ url: "http://localhost:8000/" }),
-    childAgent: new HttpAgent({ url: "http://localhost:8000/" }),
-    pirateAgent: myPirateAgent
+    childAgent1:  new HttpAgent({ url: "http://localhost:8000/" }),
+    childAgent2:  new HttpAgent({ url: "http://localhost:8000/" }),
+    childAgent3:  new HttpAgent({ url: "http://localhost:8000/" }),
+    childAgent4:  new HttpAgent({ url: "http://localhost:8000/" }),
+    childAgent5:  new HttpAgent({ url: "http://localhost:8000/" }),
+    orchestratorAgent: myOrchestratorAgent
   },
   runner: new InMemoryAgentRunner()
 });
